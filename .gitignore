@@ -1,0 +1,4 @@
+# Oxide compiles on the server; nothing to build locally
+releases/
+*.zip
+.DS_Store
