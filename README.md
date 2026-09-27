@@ -7,7 +7,7 @@ sailed, driven, or ridden by a uniformed NPC chauffeur — picks them up, delive
 departs into the distance.
 
 <!-- lpl:links -->
-**[Download v1.5.6](https://github.com/lowpoplabs/IslandTaxi/releases/latest)** · **Flyer:** [web](https://lowpoplabs.github.io/flyers/IslandTaxi.html) / [PDF](IslandTaxi-Flyer.pdf) · **[Changelog](CHANGELOG.md)** · **[Ko-fi](https://ko-fi.com/lowpoplabs)**
+**[Download v1.6.0](https://github.com/lowpoplabs/IslandTaxi/releases/latest)** · **Flyer:** [web](https://lowpoplabs.github.io/flyers/IslandTaxi.html) / [PDF](IslandTaxi-Flyer.pdf) · **[Changelog](CHANGELOG.md)** · **[Ko-fi](https://ko-fi.com/lowpoplabs)**
 <!-- /lpl:links -->
 
 ## The fleet
