@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Island Taxi", "LowPopLabs", "1.5.6")]
+    [Info("Island Taxi", "LowPopLabs", "1.6.0")]
     [Description("Dial a taxi from any phone, pick a vehicle and destination, get delivered.")]
     public class IslandTaxi : RustPlugin
     {
@@ -56,7 +56,7 @@ namespace Oxide.Plugins
         private const string UiBanner = "islandtaxi.banner";
         private const string UiConfirm = "islandtaxi.confirm";
 
-        [PluginReference] private Plugin Economics, ServerRewards;
+        [PluginReference] private Plugin Economics, ServerRewards, PapersPlease;
 
         private Configuration _config;
         private PhoneHandler _phone;
@@ -102,6 +102,24 @@ namespace Oxide.Plugins
         // Surge pricing (Task 10.1): fares scale with demand - rides dispatched in a
         // rolling hour - but only while the island is busy enough to justify it
         // (player gate keeps a lone night rider from surging himself).
+        // Fares follow the rider's Cobalt band when Cobalt Papers Please is loaded
+        // (its GetBand API); without it every rider pays the plain fare.
+        private class StandingConfig
+        {
+            [JsonProperty("Enabled")]
+            public bool Enabled = true;
+
+            [JsonProperty("Fare multiplier by band (0 = the taxi refuses the ride)", ObjectCreationHandling = ObjectCreationHandling.Replace)]
+            public Dictionary<string, double> Multipliers = new Dictionary<string, double>
+            {
+                ["Citizen"] = 0.9,
+                ["Neutral"] = 1.0,
+                ["Suspect"] = 1.0,
+                ["Wanted"] = 2.0,
+                ["Enemy"] = 0.0,
+            };
+        }
+
         private class SurgeConfig
         {
             [JsonProperty("Enabled")]
@@ -213,6 +231,9 @@ namespace Oxide.Plugins
 
             [JsonProperty("Surge pricing")]
             public SurgeConfig Surge = new SurgeConfig();
+
+            [JsonProperty("Cobalt standing (needs Cobalt Papers Please)")]
+            public StandingConfig Standing = new StandingConfig();
 
             // ObjectCreationHandling.Replace on every list: without it Json.NET appends
             // the file's entries onto these field defaults, and LoadConfig's save-back
@@ -584,6 +605,9 @@ namespace Oxide.Plugins
                 ["UiTitle"] = "ISLAND TAXI",
                 ["UiSubtitle"] = "Where to, friend?",
                 ["UiSurgeNotice"] = "SURGE PRICING IN EFFECT - fares +{0}%. Busy hour on the island.",
+                ["UiStandingSurcharge"] = "COBALT RECORD - fares +{0}%. Hazard pay for the driver.",
+                ["UiStandingDiscount"] = "Good standing with Cobalt - fares -{0}%.",
+                ["RefusedEnemy"] = "<color=#ffd479>Island Taxi</color>: Dispatch won't send a car for an Enemy of the State. Cobalt watches the roads, friend - you're walking.",
                 ["UiComingSoon"] = "{0}  -  coming soon",
                 ["TerrainAir"] = "air",
                 ["TerrainRoads"] = "roads",
@@ -918,6 +942,7 @@ namespace Oxide.Plugins
             public double Fare;
             public bool IsFree;
             public double Surge = 1.0; // multiplier snapshotted when the menu opened
+            public double Standing = 1.0; // Cobalt band multiplier, snapshotted with Surge
             public Timer Timeout;
         }
 
@@ -943,6 +968,13 @@ namespace Oxide.Plugins
             }
             EndBooking(player, null); // restart cleanly if they call twice
 
+            var standing = StandingMultiplier(player);
+            if (standing <= 0)
+            {
+                Message(player, "RefusedEnemy");
+                return;
+            }
+
             var booking = new Booking
             {
                 Player = player,
@@ -951,6 +983,7 @@ namespace Oxide.Plugins
                 // Snapshotted here so the menu banner, the quote, and the charge all
                 // agree even if the tier shifts mid-booking.
                 Surge = CurrentSurgeMultiplier(),
+                Standing = standing,
             };
             booking.Timeout = timer.Once(_config.RideTimeoutSeconds, () =>
             {
@@ -1128,7 +1161,7 @@ namespace Oxide.Plugins
             booking.Destination = dropoff;
             booking.Fare = booking.IsFree
                 ? 0
-                : Math.Ceiling(CalculateFare(booking.Vehicle, booking.Distance) * booking.Surge);
+                : Math.Ceiling(CalculateFare(booking.Vehicle, booking.Distance) * booking.Surge * booking.Standing);
             booking.State = BookingState.Confirming;
 
             CuiHelper.DestroyUi(player, UiBanner);
@@ -1285,6 +1318,19 @@ namespace Oxide.Plugins
 
         // 1.0 when disabled, when the island is too quiet (player gate), or when the
         // last hour was slow; otherwise the highest tier the ride count clears.
+        // The rider's Cobalt band -> fare multiplier; 1 when Papers Please is absent,
+        // the feature is off, or the band has no entry. 0 means refuse the ride.
+        private double StandingMultiplier(BasePlayer player)
+        {
+            var cfg = _config.Standing;
+            if (cfg == null || !cfg.Enabled || cfg.Multipliers == null || PapersPlease == null || !PapersPlease.IsLoaded)
+            {
+                return 1.0;
+            }
+            var band = PapersPlease.Call("GetBand", (ulong)player.userID) as string;
+            return band != null && cfg.Multipliers.TryGetValue(band, out var mult) ? Math.Max(0, mult) : 1.0;
+        }
+
         private double CurrentSurgeMultiplier()
         {
             var surge = _config.Surge;
@@ -5094,18 +5140,25 @@ namespace Oxide.Plugins
             }, UiMain);
             // Surge notice takes the subtitle's slot: the friendly greeting yields to
             // the money warning, and the price tags below already show surged rates.
-            var surge = _bookings.TryGetValue(player.userID, out var menuBooking) ? menuBooking.Surge : 1.0;
+            var haveBooking = _bookings.TryGetValue(player.userID, out var menuBooking);
+            var surge = haveBooking ? menuBooking.Surge : 1.0;
+            var standing = haveBooking ? menuBooking.Standing : 1.0;
             var surging = surge > 1.001;
+            // The Cobalt band notice sits beside (or in place of) the surge one.
+            string standingNotice = null;
+            if (standing > 1.001) standingNotice = Msg("UiStandingSurcharge", player, Math.Round((standing - 1.0) * 100.0));
+            else if (standing < 0.999) standingNotice = Msg("UiStandingDiscount", player, Math.Round((1.0 - standing) * 100.0));
+            var subtitle = surging ? Msg("UiSurgeNotice", player, Math.Round((surge - 1.0) * 100.0)) : null;
+            if (standingNotice != null) subtitle = subtitle == null ? standingNotice : subtitle + "\n" + standingNotice;
+            var warn = surging || standing > 1.001;
             ui.Add(new CuiLabel
             {
                 Text =
                 {
-                    Text = surging
-                        ? Msg("UiSurgeNotice", player, Math.Round((surge - 1.0) * 100.0))
-                        : Msg("UiSubtitle", player),
+                    Text = subtitle ?? Msg("UiSubtitle", player),
                     FontSize = 13,
                     Align = TextAnchor.MiddleCenter,
-                    Color = surging ? "1 0.55 0.25 1" : "0.8 0.8 0.8 1"
+                    Color = warn ? "1 0.55 0.25 1" : (standingNotice != null ? "0.55 0.85 0.55 1" : "0.8 0.8 0.8 1")
                 },
                 RectTransform = { AnchorMin = "0 0.78", AnchorMax = "1 0.87" }
             }, UiMain);
@@ -5134,8 +5187,8 @@ namespace Oxide.Plugins
                     // Menu shows what the meter will actually run at - surged rates,
                     // not sticker prices.
                     var priceTag = Msg("UiPriceTag", player,
-                        _payment.FormatAmount(Math.Ceiling(pair.Value.BaseFare * surge)),
-                        _payment.FormatRate(pair.Value.RatePerMeter * surge),
+                        _payment.FormatAmount(Math.Ceiling(pair.Value.BaseFare * surge * standing)),
+                        _payment.FormatRate(pair.Value.RatePerMeter * surge * standing),
                         pair.Value.Speed);
                     ui.Add(new CuiButton
                     {

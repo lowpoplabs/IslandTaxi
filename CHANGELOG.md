@@ -3,6 +3,11 @@
 All notable changes to Island Taxi are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow SemVer.
 
+## [1.6.0] — 2026-09-27
+
+### Added
+- Fares follow the rider's standing with Cobalt when Cobalt Papers Please is loaded: Citizens ride 10% cheaper, the Wanted pay double, and an Enemy of the State is refused a car. Multipliers per band live in the new `Cobalt standing` config section (0 = refuse); the menu prices and the quote include them, and a line under the title says why. Without Papers Please nothing changes.
+
 ## [1.5.6] — 2026-09-12
 
 First public release on GitHub — no gameplay changes.

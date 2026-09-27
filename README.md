@@ -38,6 +38,9 @@ priciest-first and goes two-column for big fleets.
 - **Fares** — base fare + per-meter rate, per vehicle. Pays through **Economics** or
   **ServerRewards** if installed, otherwise **scrap**. Refunds only happen if the taxi was
   never spawned; after that, no refunds — island policy.
+- **Cobalt standing** — with Cobalt Papers Please loaded, fares follow the rider's band:
+  Citizens ride 10% cheaper, the Wanted pay double, and an Enemy of the State is refused
+  a car (multipliers per band in config; 0 = refuse). No effect without Papers Please.
 - **Surge pricing** — a rolling one-hour demand meter scales fares in posted steps
   (defaults: 3+ rides/hour → +25%, 6+ → +50%, 10+ → +100%; tiers configurable). Only
   applies while enough players are online (default 2+), so a lone rider never surges
@@ -119,6 +122,7 @@ it ships ready to use.
 | Max safe-spot search radius (m) | `60` | Ring-search radius around pins and pickups |
 | Ride request timeout (s) | `120` | Booking steps and boarding wait |
 | Despawn delay after drop-off (s) | `30` | The fly-away window before the empty taxi despawns |
+| Cobalt standing → Fare multiplier by band | Citizen 0.9, Wanted 2, Enemy 0 | Needs Cobalt Papers Please; 0 refuses the ride |
 | Restricted zones | `[]` | Monument name substrings or custom X/Z/radius circles |
 
 ## Permissions
