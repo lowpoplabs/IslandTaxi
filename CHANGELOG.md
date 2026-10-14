@@ -3,6 +3,11 @@
 All notable changes to Island Taxi are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow SemVer.
 
+## [1.6.1] — 2026-10-13
+
+### Fixed
+- **BetterNpc bots could open fire on the company driver.** KpucTaJl's NpcSpawn (the brain behind BetterNpc) skips the vanilla `OnNpcTarget` hook and asks its own `OnCustomNpcTarget` instead, so the on-duty driver was fair game to every custom NPC along the route. Island Taxi now answers both hooks: no vanilla scientist, animal or BetterNpc bot locks onto a driver at the wheel. Compiles fine without NpcSpawn installed.
+
 ## [1.6.0] — 2026-09-27
 
 ### Added

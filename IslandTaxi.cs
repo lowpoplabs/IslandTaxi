@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Island Taxi", "LowPopLabs", "1.6.0")]
+    [Info("Island Taxi", "LowPopLabs", "1.6.1")]
     [Description("Dial a taxi from any phone, pick a vehicle and destination, get delivered.")]
     public class IslandTaxi : RustPlugin
     {
@@ -3027,17 +3027,43 @@ namespace Oxide.Plugins
         // ejected a bike driver mid-ride, 2026-08-30). Company drivers don't fall out.
         private object CanDismountEntity(BasePlayer player, BaseMountable seat)
         {
-            if (player is HumanNPC)
+            if (IsTaxiDriver(player))
             {
-                foreach (var r in _ridesByVehicle.Values)
-                {
-                    if (r.Driver == player)
-                    {
-                        return false; // block every dismount path for on-duty drivers
-                    }
-                }
+                return false; // block every dismount path for on-duty drivers
             }
             return null;
+        }
+
+        private bool IsTaxiDriver(BaseEntity entity)
+        {
+            if (!(entity is HumanNPC npc))
+            {
+                return false;
+            }
+            foreach (var r in _ridesByVehicle.Values)
+            {
+                if (r.Driver == npc)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Company drivers are not fair game: vanilla NPCs (scientists, animals) ask
+        // OnNpcTarget before locking on, and any non-null answer stops them.
+        private object OnNpcTarget(BaseEntity npc, BaseEntity target)
+        {
+            return IsTaxiDriver(target) ? true : (object)null;
+        }
+
+        // KpucTaJl's NpcSpawn (the brain behind BetterNpc) bypasses OnNpcTarget: its
+        // CustomScientistNpc runs its own scan and asks OnCustomNpcTarget instead,
+        // honouring only a bool (false = never target). Declared on base types so the
+        // plugin still compiles when NpcSpawn is absent.
+        private object OnCustomNpcTarget(BaseEntity npc, BaseEntity target)
+        {
+            return IsTaxiDriver(target) ? false : (object)null;
         }
 
         // Belt and braces: if a driver is ejected anyway, put them back in the seat.
