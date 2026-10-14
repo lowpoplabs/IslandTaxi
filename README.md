@@ -169,7 +169,7 @@ Island Taxi driver wears:
 ## Compatibility
 
 - Built against the September 3, 2026 Rust update (build 2633.288). Versions from 1.5.4 onward need that build or newer; the previous version is the last one that compiles on August builds.
-- **BetterNpc / NpcSpawn (KpucTaJl):** custom bots leave the company driver alone from 1.6.1 onward. NpcSpawn skips the vanilla `OnNpcTarget` hook and asks its own `OnCustomNpcTarget`; Island Taxi answers both. Neither plugin is required.
+- **BetterNpc / NpcSpawn (KpucTaJl):** custom bots leave the company driver alone from 1.6.1 onward, and everyone aboard an active taxi from 1.6.2. NpcSpawn skips the vanilla `OnNpcTarget` hook and asks its own `OnCustomNpcTarget`; Island Taxi answers both. Neither plugin is required.
 
 ## Support
 

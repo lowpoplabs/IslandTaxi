@@ -3,6 +3,11 @@
 All notable changes to Island Taxi are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow SemVer.
 
+## [1.6.2] — 2026-10-13
+
+### Changed
+- **Passengers are off the menu too.** The 1.6.1 guard covered only the driver; now nobody seated in an active taxi - the fare, teammates riding along, or the driver - is targeted by vanilla NPCs or BetterNpc bots until they step out. Island drama resumes the moment you leave the cab.
+
 ## [1.6.1] — 2026-10-13
 
 ### Fixed

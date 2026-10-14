@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Island Taxi", "LowPopLabs", "1.6.1")]
+    [Info("Island Taxi", "LowPopLabs", "1.6.2")]
     [Description("Dial a taxi from any phone, pick a vehicle and destination, get delivered.")]
     public class IslandTaxi : RustPlugin
     {
@@ -3050,11 +3050,20 @@ namespace Oxide.Plugins
             return false;
         }
 
-        // Company drivers are not fair game: vanilla NPCs (scientists, animals) ask
-        // OnNpcTarget before locking on, and any non-null answer stops them.
+        // Anyone in a seat of an active taxi: the fare, teammates riding along, or
+        // the driver (who is pinned to the wheel and reads as mounted too).
+        private bool IsAboardTaxi(BaseEntity entity)
+        {
+            var vehicle = (entity as BasePlayer)?.GetMountedVehicle();
+            return vehicle?.net != null && _ridesByVehicle.ContainsKey(vehicle.net.ID.Value);
+        }
+
+        // Nobody on a company ride is fair game - driver or passengers - until they
+        // step out. Vanilla NPCs (scientists, animals) ask OnNpcTarget before locking
+        // on, and any non-null answer stops them.
         private object OnNpcTarget(BaseEntity npc, BaseEntity target)
         {
-            return IsTaxiDriver(target) ? true : (object)null;
+            return IsTaxiDriver(target) || IsAboardTaxi(target) ? true : (object)null;
         }
 
         // KpucTaJl's NpcSpawn (the brain behind BetterNpc) bypasses OnNpcTarget: its
@@ -3063,7 +3072,7 @@ namespace Oxide.Plugins
         // plugin still compiles when NpcSpawn is absent.
         private object OnCustomNpcTarget(BaseEntity npc, BaseEntity target)
         {
-            return IsTaxiDriver(target) ? false : (object)null;
+            return IsTaxiDriver(target) || IsAboardTaxi(target) ? false : (object)null;
         }
 
         // Belt and braces: if a driver is ejected anyway, put them back in the seat.
