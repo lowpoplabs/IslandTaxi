@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Oxide.Plugins
 {
-    [Info("Island Taxi", "LowPopLabs", "1.6.2")]
+    [Info("Island Taxi", "LowPopLabs", "1.6.3")]
     [Description("Dial a taxi from any phone, pick a vehicle and destination, get delivered.")]
     public class IslandTaxi : RustPlugin
     {
@@ -4939,7 +4939,7 @@ namespace Oxide.Plugins
                 sign.Spawn();
                 if (sign.textureIDs != null && sign.textureIDs.Length > 0)
                 {
-                    sign.textureIDs[0] = FileStorage.server.Store(image, FileStorage.Type.png, sign.net.ID);
+                    sign.textureIDs[0] = FileStorage.server.Store(sign.net.ID, 0uL, FileStorage.Type.png, image);
                 }
                 if (_posters.Count == 0)
                 {
@@ -4958,7 +4958,7 @@ namespace Oxide.Plugins
                 // texture resolution; log both so a mismatch is visible.
                 frame.EnableSaving(false);
                 frame.Spawn();
-                frame._overlayTextureCrc = FileStorage.server.Store(image, FileStorage.Type.png, frame.net.ID);
+                frame._overlayTextureCrc = FileStorage.server.Store(frame.net.ID, 0uL, FileStorage.Type.png, image);
                 if (_posters.Count == 0)
                 {
                     var ts = frame.TextureSize;
@@ -4979,7 +4979,7 @@ namespace Oxide.Plugins
                 }
                 wanted.EnableSaving(false);
                 wanted.Spawn();
-                wanted.imageCrc = FileStorage.server.Store(System.IO.File.ReadAllBytes(jpgPath), FileStorage.Type.jpg, wanted.net.ID);
+                wanted.imageCrc = FileStorage.server.Store(wanted.net.ID, 0uL, FileStorage.Type.jpg, System.IO.File.ReadAllBytes(jpgPath));
                 wanted.playerName = "ISLAND TAXI  555-TAXI1";
                 SetFlagNet(wanted, BaseEntity.Flags.Reserved1, true); // HasTarget: show the photo
                 LockPoster(wanted);

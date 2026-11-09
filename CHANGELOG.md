@@ -3,6 +3,11 @@
 All notable changes to Island Taxi are documented here. Format follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow SemVer.
 
+## [1.6.3] — 2026-11-09
+
+### Fixed
+- **Compiles on the November 2026 Rust update.** Facepunch reworked `FileStorage`, so the plugin refused to load. Company posters now store their image under the new API, in the same slot vanilla signs, canvases and wanted posters use. Posters are re-hung on every plugin load, so there is nothing to migrate.
+
 ## [1.6.2] — 2026-10-13
 
 ### Changed
